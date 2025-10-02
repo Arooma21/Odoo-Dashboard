@@ -1,0 +1,21 @@
+.o_mssql_recv {
+  padding: 16px;
+}
+.o_example_cards {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.o_card {
+  border: 1px solid var(--o-gray-200);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+}
+.o_card_title {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.o_card_value {
+  font-size: 20px;
+}

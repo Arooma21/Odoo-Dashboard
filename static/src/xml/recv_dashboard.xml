@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="mssql_bridge.RecvDashboard">
+    <div class="o_form_view o_mssql_recv">
+      <h2>Receivables (Live)</h2>
+      <p>If you can see this, the real component overrode the placeholder successfully.</p>
+    </div>
+  </t>
+</templates>
