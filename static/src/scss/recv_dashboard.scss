@@ -1,21 +1,191 @@
+/* =======================
+   RECEIVABLES DASHBOARD
+========================= */
 .o_mssql_recv {
   padding: 16px;
 }
+
+/* ===== SUMMARY CARDS ===== */
 .o_example_cards {
   display: grid;
   gap: 12px;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 16px;
 }
+
 .o_card {
-  border: 1px solid var(--o-gray-200);
   border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.05);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  background: var(--o-view-background, #fff);
+  border: 1px solid var(--o-gray-200);
 }
+
 .o_card_title {
   font-weight: 600;
   margin-bottom: 6px;
+  color: var(--o-gray-700);
 }
+
 .o_card_value {
   font-size: 20px;
+  font-weight: 500;
 }
+
+/* Color codes for each card */
+.o_card--current { background-color: #ecfdf5; border-color: #6ee7b7; } /* green */
+.o_card--d0_30   { background-color: #fffbeb; border-color: #fcd34d; } /* yellow */
+.o_card--d31_60  { background-color: #fff7ed; border-color: #fb923c; } /* orange */
+.o_card--d61_90  { background-color: #fef2f2; border-color: #f87171; } /* red */
+.o_card--d90p    { background-color: #fee2e2; border-color: #ef4444; } /* dark red */
+
+/* ===== TABLE ===== */
+.table th,
+.table td {
+  padding: 6px 8px;
+}
+
+.table .col-current { background-color: #f0fdf4; } /* light green tint */
+.table .col-d0_30   { background-color: #fffbea; } /* light yellow */
+.table .col-d31_60  { background-color: #fff7ed; } /* light orange */
+.table .col-d61_90  { background-color: #fef2f2; } /* light red */
+.table .col-d90p    { background-color: #fee2e2; } /* dark red tint */
+
+.text-end {
+  text-align: right;
+}
+
+/* =======================
+   NAVIGATION TABS (Dashboard ↔ Charts)
+========================= */
+.o_recv__nav {
+  display: inline-flex;
+  gap: 0.5rem;
+  margin: 0.25rem 0 1rem 0;
+}
+
+.o_recv__nav .tab {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--o-gray-200);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--o-gray-800);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.o_recv__nav .tab:hover {
+  background: #f8fafc;
+}
+
+.o_recv__nav .tab.active {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+  color: #3730a3;
+}
+
+/* =======================
+   RECEIVABLES CHARTS PAGE
+========================= */
+.o_mssql_recv_charts {
+  padding: 1.5rem;
+
+  h2 {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+  }
+
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .chart-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+    padding: 1rem;
+    height: 320px;
+
+    h3 {
+      font-size: 1rem;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+
+    canvas {
+      width: 100% !important;
+      height: 230px !important;
+    }
+
+    &.wide {
+      grid-column: span 2;
+      height: 340px;
+
+      canvas {
+        height: 240px !important;
+      }
+    }
+  }
+}
+/* ===== ROW EXPANDER ===== */
+#recv_table .o-recv-row { cursor: pointer; }
+#recv_table .o-recv-row:hover { background: #f9fafb; }
+
+.o-recv-expand { display: none; background: #fbfbfb; }
+.o-recv-expand.open { display: table-row; }
+
+.o-recv-expand td {
+  padding: 0 !important;
+}
+
+.o-recv-expand__body {
+  padding: 10px 12px;
+}
+
+.o-recv-expand__loading,
+.o-recv-expand__empty,
+.o-recv-expand__error {
+  padding: 10px;
+  color: #6b7280;
+}
+
+.o-recv-expand__section { margin-bottom: 12px; }
+
+.o-recv-expand__sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 2px 0 6px 0;
+  font-weight: 600;
+}
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 12px; }
+.badge-current { background: #ecfdf5; color: #065f46; }
+.badge-d0_30   { background: #fffbeb; color: #854d0e; }
+.badge-d31_60  { background: #fff7ed; color: #9a3412; }
+.badge-d61_90  { background: #fef2f2; color: #991b1b; }
+.badge-d90p    { background: #fee2e2; color: #7f1d1d; }
+
+.o-recv-expand__sectionTotal { font-weight: 600; color: #111827; }
+
+.o-recv-expand__table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+}
+
+.o-recv-expand__table th,
+.o-recv-expand__table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.o-recv-expand__table th { background: #f9fafb; text-align: left; }
+.o-recv-expand__table .num { text-align: right; }
+

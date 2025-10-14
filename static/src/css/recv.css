@@ -1,0 +1,12 @@
+.o_mssql_recv .aging-030  { color:#17a2b8; }
+.o_mssql_recv .aging-3160 { color:#a07900; }
+.o_mssql_recv .aging-6190 { color:#fd7e14; }
+.o_mssql_recv .aging-90p  { color:#dc3545; }
+
+.o_mssql_recv .kpi .card-body { padding: .9rem 1rem; }
+.o_mssql_recv .kpi-total   { border-left:4px solid #6c757d; }
+.o_mssql_recv .kpi-current { border-left:4px solid #28a745; }
+.o_mssql_recv .kpi-030     { border-left:4px solid #17a2b8; }
+.o_mssql_recv .kpi-3160    { border-left:4px solid #a07900; }
+.o_mssql_recv .kpi-6190    { border-left:4px solid #fd7e14; }
+.o_mssql_recv .kpi-90p     { border-left:4px solid #dc3545; }

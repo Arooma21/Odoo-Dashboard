@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <template id="recv_charts_page" name="Receivables Charts Page">
+      <div class="o_recv__topbar">
+          <a href="/web#home" class="btn btn-light btn-sm o_recv__back">← </a>
+      </div>
+    <t t-call="web.layout">
+      <t t-set="title">Receivables Charts</t>
+      <t t-call-assets="web.assets_backend" t-js="false"/>
+      <t t-call-assets="web.assets_backend" t-css="false"/>
+
+      <div class="o_mssql_recv_charts">
+        <h2>Receivables Charts</h2>
+
+         <div class="o_recv__nav">
+          <a href="/recv/dashboard" class="tab">Dashboard</a>
+          <a href="/recv/charts" class="tab active" aria-current="page">Charts</a>
+        </div>
+
+
+
+        <div class="charts-grid">
+          <!-- Bar -->
+          <div class="chart-card">
+            <h3>Aging Summary (Bar)</h3>
+            <canvas id="recv_bar"></canvas>
+          </div>
+
+          <!-- Pie -->
+          <div class="chart-card">
+            <h3>Aging Distribution (Pie)</h3>
+            <canvas id="recv_pie"></canvas>
+          </div>
+
+          <!-- Line (wider card) -->
+          <div class="chart-card wide">
+            <h3>Top 10 Customers by Total (Line)</h3>
+            <canvas id="recv_line"></canvas>
+          </div>
+        </div>
+
+        <!-- Hidden JSON blobs for the renderer -->
+        <script type="application/json" id="recv_totals_json"><t t-raw="totals_json"/></script>
+        <script type="application/json" id="recv_top10_labels_json"><t t-raw="top10_labels_json"/></script>
+        <script type="application/json" id="recv_top10_values_json"><t t-raw="top10_values_json"/></script>
+      </div>
+    </t>
+  </template>
+</odoo>

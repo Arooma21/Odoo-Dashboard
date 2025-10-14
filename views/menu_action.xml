@@ -1,16 +1,22 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <!-- Open a backend URL instead of a client action -->
-  <record id="action_recv_dashboard_url" model="ir.actions.act_url">
-    <field name="name">Receivables (Live)</field>
+  <record id="action_recv_charts_url" model="ir.actions.act_url">
+    <field name="name">Receivables – Charts</field>
     <field name="type">ir.actions.act_url</field>
-    <field name="url">/recv/dashboard</field>
-    <field name="target">self</field> <!-- show inside Odoo window -->
+    <field name="url">/recv/charts</field>
+    <field name="target">self</field>
   </record>
 
-  <menuitem id="menu_recv_root"
-            name="Receivables (Live)"
-            action="action_recv_dashboard_url"
-            groups="base.group_user,base.group_system"
-            sequence="30"/>
+  <record id="action_recv_dashboard_url" model="ir.actions.act_url">
+    <field name="name">Receivables – Dashboard</field>
+    <field name="type">ir.actions.act_url</field>
+    <field name="url">/recv/dashboard</field>
+    <field name="target">self</field>
+  </record>
+
+  <menuitem id="menu_recv_root" name="Receivables (Live)"
+            action="action_recv_charts_url"
+            groups="base.group_user,base.group_system" sequence="30"/>
+
+  <menuitem id="menu_recv_dashboard" name="Dashboard (Table)"
+            parent="menu_recv_root" action="action_recv_dashboard_url" sequence="10"/>
 </odoo>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <template id="recv_dashboard_page" name="Receivables Dashboard Page">
+      <div class="o_recv__topbar">
+          <a href="/web#home" class="btn btn-light btn-sm o_recv__back">← </a>
+      </div>
+    <t t-call="web.layout">
+      <t t-set="title">Receivables Dashboard</t>
+      <t t-call-assets="web.assets_backend" t-js="false"/>
+      <t t-call-assets="web.assets_backend" t-css="false"/>
+
+      <!-- number formatter -->
+      <t t-set="fmt" t-value="lambda n: ('{:,.2f}'.format(float(n or 0.0)))"/>
+
+      <div class="o_mssql_recv">
+        <h2>Receivables Dashboard</h2>
+
+        <!-- top bar: back + refresh -->
+          <div class="o_recv__refreshbar">
+            <span class="o_recv__stamp">Last updated: <strong t-esc="updated_at"/></span>
+            <button id="recv_refresh" type="button" class="btn btn-secondary btn-sm">Refresh</button>
+            <span id="recv_refresh_status" class="o_recv__note"></span>
+          </div>
+
+
+        <!-- tabs -->
+        <div class="o_recv__nav" style="margin-top:.5rem;">
+          <a href="/recv/dashboard" class="tab active" aria-current="page">Dashboard</a>
+          <a href="/recv/charts" class="tab">Charts</a>
+        </div>
+
+        <!-- summary cards -->
+        <div class="o_example_cards">
+          <div class="o_card o_card--current">
+            <div class="o_card_title">Current</div>
+            <div class="o_card_value" t-esc="fmt(totals.get('current'))"/>
+          </div>
+          <div class="o_card o_card--d0_30">
+            <div class="o_card_title">1–30 Days</div>
+            <div class="o_card_value" t-esc="fmt(totals.get('d0_30'))"/>
+          </div>
+          <div class="o_card o_card--d31_60">
+            <div class="o_card_title">31–60 Days</div>
+            <div class="o_card_value" t-esc="fmt(totals.get('d31_60'))"/>
+          </div>
+          <div class="o_card o_card--d61_90">
+            <div class="o_card_title">61–90 Days</div>
+            <div class="o_card_value" t-esc="fmt(totals.get('d61_90'))"/>
+          </div>
+          <div class="o_card o_card--d90p">
+            <div class="o_card_title">90+ Days</div>
+            <div class="o_card_value" t-esc="fmt(totals.get('d90p'))"/>
+          </div>
+          <div class="o_card">
+            <div class="o_card_title">Total Receivables</div>
+            <div class="o_card_value" t-esc="fmt(totals.get('total'))"/>
+          </div>
+        </div>
+
+        <!-- expandable table -->
+        <table id="recv_table" class="o_recv__table table table-sm table-striped">
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th class="text-end">Total</th>
+              <th class="text-end">Current</th>
+              <th class="text-end">1–30</th>
+              <th class="text-end">31–60</th>
+              <th class="text-end">61–90</th>
+              <th class="text-end">90+</th>
+            </tr>
+          </thead>
+          <tbody>
+            <t t-foreach="rows" t-as="r">
+              <tr class="o-recv-row"
+                  t-att-data-customer_code="r.get('customer_code')"
+                  t-att-data-customer_name="r.get('customer_name')">
+                <td t-esc="r.get('customer_name') or r.get('customer')"/>
+                <td class="num" t-esc="fmt(r.get('total'))"/>
+                <td class="num col-current" t-esc="fmt(r.get('current'))"/>
+                <td class="num col-d0_30" t-esc="fmt(r.get('d0_30'))"/>
+                <td class="num col-d31_60" t-esc="fmt(r.get('d31_60'))"/>
+                <td class="num col-d61_90" t-esc="fmt(r.get('d61_90'))"/>
+                <td class="num col-d90p" t-esc="fmt(r.get('d90p'))"/>
+              </tr>
+              <tr class="o-recv-expand">
+                <td colspan="7">
+                  <div class="o-recv-expand__body"><!-- filled by JS --></div>
+                </td>
+              </tr>
+            </t>
+          </tbody>
+        </table>
+      </div>
+    </t>
+  </template>
+</odoo>
