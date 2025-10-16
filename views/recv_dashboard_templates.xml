@@ -73,16 +73,17 @@
           <tbody>
             <t t-foreach="rows" t-as="r">
               <tr class="o-recv-row"
-                  t-att-data-customer_code="r.get('customer_code')"
-                  t-att-data-customer_name="r.get('customer_name')">
-                <td t-esc="r.get('customer_name') or r.get('customer')"/>
-                <td class="num" t-esc="fmt(r.get('total'))"/>
-                <td class="num col-current" t-esc="fmt(r.get('current'))"/>
-                <td class="num col-d0_30" t-esc="fmt(r.get('d0_30'))"/>
-                <td class="num col-d31_60" t-esc="fmt(r.get('d31_60'))"/>
-                <td class="num col-d61_90" t-esc="fmt(r.get('d61_90'))"/>
-                <td class="num col-d90p" t-esc="fmt(r.get('d90p'))"/>
-              </tr>
+              t-att-data-customer_code="(r.get('customer_code') or '').strip()"
+              t-att-data-customer_name="(r.get('customer_name') or r.get('customer') or '').strip()">
+              <td t-esc="r.get('customer_name') or r.get('customer')"/>
+              <td class="num" t-esc="fmt(r.get('total'))"/>
+              <td class="num col-current" t-esc="fmt(r.get('current'))"/>
+              <td class="num col-d0_30" t-esc="fmt(r.get('d0_30'))"/>
+              <td class="num col-d31_60" t-esc="fmt(r.get('d31_60'))"/>
+              <td class="num col-d61_90" t-esc="fmt(r.get('d61_90'))"/>
+              <td class="num col-d90p" t-esc="fmt(r.get('d90p'))"/>
+          </tr>
+
               <tr class="o-recv-expand">
                 <td colspan="7">
                   <div class="o-recv-expand__body"><!-- filled by JS --></div>

@@ -1,80 +1,67 @@
 /** @odoo-module **/
 
-function fmt(n) {
+// ----- helpers --------------------------------------------------------------
+function fmtMoney(n) {
   return Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
-function groupByBucket(rows) {
-  const buckets = { current: [], d0_30: [], d31_60: [], d61_90: [], d90p: [] };
-  (rows || []).forEach((r) => {
-    const b = (r.bucket || "current").toLowerCase();
-    if (buckets[b]) buckets[b].push(r);
-    else buckets.current.push(r);
-  });
-  return buckets;
-}
-
-function renderInvoices(rows) {
-  if (!rows.length) {
-    return "<div class='o-recv-expand__empty'>No invoices found.</div>";
-  }
-  const by = groupByBucket(rows);
-  const order = [
-    ["current","Current"],
-    ["d0_30","1–30"],
-    ["d31_60","31–60"],
-    ["d61_90","61–90"],
-    ["d90p","90+"],
-  ];
-
-  const sections = order.map(([key, label]) => {
-    const items = by[key];
-    if (!items.length) return "";
-    const total = items.reduce((s, r) => s + Number(r.amount || 0), 0);
-    const rowsHtml = items.map((r) => `
-      <tr>
-        <td>${r.number || ""}</td>
-        <td>${r.date || ""}</td>
-        <td>${r.due_date || ""}</td>
-        <td class="num">${r.days_overdue}</td>
-        <td class="num">${fmt(r.amount)}</td>
-      </tr>
-    `).join("");
-
-    return `
-      <div class="o-recv-expand__section">
-        <div class="o-recv-expand__sectionHeader">
-          <span class="badge badge-${key}">${label}</span>
-          <span class="o-recv-expand__sectionTotal">Total: ${fmt(total)}</span>
-        </div>
-        <table class="o-recv-expand__table">
-          <thead>
-            <tr>
-              <th>Invoice</th>
-              <th>Date</th>
-              <th>Due</th>
-              <th class="num">Days</th>
-              <th class="num">Amount</th>
-            </tr>
-          </thead>
-          <tbody>${rowsHtml}</tbody>
-        </table>
-      </div>
-    `;
-  }).join("");
-
-  return sections || "<div class='o-recv-expand__empty'>No invoices found.</div>";
-}
-
+// static/src/js/recv_dashboard_expand.js
 function postJson(url, payload) {
+  // Odoo expects {"params": {...}} in JSON-RPC format
+  const body = JSON.stringify({ params: payload || {} });
+  console.debug("[recv] POST", url, payload);  // for debugging
+
   return fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload || {}),
     credentials: "same-origin",
+    body,
   }).then((r) => r.json());
 }
 
+
+// Build the mini-table with ONLY the requested columns.
+function renderInvoices(rows) {
+  if (!rows || !rows.length) {
+    return "<div class='o-recv-expand__empty'>No invoices found.</div>";
+  }
+
+  const total = rows.reduce((s, r) => s + Number(r.AMTINVCHC || 0), 0);
+
+  const trs = rows.map((r) => `
+    <tr>
+      <td>${r.DATEINVC || ""}</td>
+      <td>${r.IDORDERNBR || ""}</td>
+      <td>${r.IDCUSTPO || ""}</td>
+      <td>${r.DESCINVC || ""}</td>
+      <td class="num">${fmtMoney(r.AMTINVCHC)}</td>
+    </tr>
+  `).join("");
+
+  return `
+    <div class="o-recv-expand__section">
+      <div class="o-recv-expand__sectionHeader">
+        <span>Invoices</span>
+        <span class="o-recv-expand__sectionTotal">Total: ${fmtMoney(total)}</span>
+      </div>
+      <table class="o-recv-expand__table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Order #</th>
+            <th>Customer PO</th>
+            <th>Description</th>
+            <th class="num">Amount</th>
+          </tr>
+        </thead>
+        <tbody>${trs}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+// ----- main -----------------------------------------------------------------
+// static/src/js/recv_dashboard_expand.js
 function setupExpandableRows() {
   const tbl = document.getElementById("recv_table");
   if (!tbl) return;
@@ -86,26 +73,30 @@ function setupExpandableRows() {
     const expandRow = row.nextElementSibling;
     if (!expandRow || !expandRow.classList.contains("o-recv-expand")) return;
 
-    // Toggle open/close if already loaded
     if (expandRow.dataset.loaded === "1") {
       expandRow.classList.toggle("open");
       return;
     }
 
-    // First time: fetch and render
-    const code = row.dataset.customer_code || null;
-    const name = row.dataset.customer_name || null;
+    const code = (row.dataset.customer_code || "").trim();
+    const name = (row.dataset.customer_name || "").trim();
+
     const body = expandRow.querySelector(".o-recv-expand__body");
     body.innerHTML = "<div class='o-recv-expand__loading'>Loading…</div>";
 
     try {
-      const res = await postJson("/recv/invoices", { customer_code: code, customer_name: name });
-      body.innerHTML = renderInvoices(res.rows || []);
+      const res = await postJson("/recv/invoices", {
+        customer_code: code,
+        customer_name: name,
+      });
+      // handle both {"rows": []} and {"result": {"rows": []}}
+      body.innerHTML = renderInvoices(
+        (res && res.result && res.result.rows) || res.rows || []
+      );
       expandRow.dataset.loaded = "1";
       expandRow.classList.add("open");
     } catch (e) {
       body.innerHTML = "<div class='o-recv-expand__error'>Failed to load invoices.</div>";
-      // eslint-disable-next-line no-console
       console.error(e);
     }
   });
