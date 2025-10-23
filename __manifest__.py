@@ -23,6 +23,7 @@
         # NEW: expandable invoices on dashboard
         'mssql_bridge/static/src/js/recv_dashboard_expand.js',
         'mssql_bridge/static/src/js/recv_dashboard_refresh.js',
+        'mssql_bridge/static/src/js/recv_dashboard_filter.js',
     ],
 },
 

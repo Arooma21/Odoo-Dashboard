@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
   <template id="recv_dashboard_page" name="Receivables Dashboard Page">
-      <div class="o_recv__topbar">
-          <a href="/web#home" class="btn btn-light btn-sm o_recv__back">← </a>
-      </div>
     <t t-call="web.layout">
       <t t-set="title">Receivables Dashboard</t>
       <t t-call-assets="web.assets_backend" t-js="false"/>
@@ -13,15 +10,22 @@
       <t t-set="fmt" t-value="lambda n: ('{:,.2f}'.format(float(n or 0.0)))"/>
 
       <div class="o_mssql_recv">
+
+        <!-- back button (inside layout) -->
+        <div class="o_recv__topbar">
+          <a href="/web#home" class="btn btn-light btn-sm o_recv__back">← Back to Home</a>
+        </div>
+
         <h2>Receivables Dashboard</h2>
 
-        <!-- top bar: back + refresh -->
-          <div class="o_recv__refreshbar">
-            <span class="o_recv__stamp">Last updated: <strong t-esc="updated_at"/></span>
-            <button id="recv_refresh" type="button" class="btn btn-secondary btn-sm">Refresh</button>
-            <span id="recv_refresh_status" class="o_recv__note"></span>
-          </div>
-
+        <!-- top bar: last updated + refresh -->
+        <div class="o_recv__refreshbar">
+          <span class="o_recv__stamp">
+            Last updated: <strong t-esc="updated_at"/>
+          </span>
+          <button id="recv_refresh" type="button" class="btn btn-secondary btn-sm">Refresh</button>
+          <span id="recv_refresh_status" class="o_recv__note"></span>
+        </div>
 
         <!-- tabs -->
         <div class="o_recv__nav" style="margin-top:.5rem;">
@@ -57,36 +61,79 @@
           </div>
         </div>
 
-        <!-- expandable table -->
+        <!-- toolbar: search + filters (non-destructive addition) -->
+        <div class="o-recv-tools">
+          <div class="o-recv-tools__left">
+            <input id="recvSearch" class="o-recv-input" type="search" placeholder="Search customers… (min 2 chars)"/>
+            <button id="recvClear" class="btn btn-light btn-sm" type="button">Clear</button>
+          </div>
+          <div class="o-recv-tools__right">
+            <select id="recvBucket" class="o-recv-select">
+              <option value="">All buckets</option>
+              <option value="current">Current ≠ 0</option>
+              <option value="d0_30">1–30 ≠ 0</option>
+              <option value="d31_60">31–60 ≠ 0</option>
+              <option value="d61_90">61–90 ≠ 0</option>
+              <option value="d90p">90+ ≠ 0</option>
+              <option value="hasneg">Has negative (any bucket)</option>
+            </select>
+            <select id="recvZero" class="o-recv-select">
+              <option value="hide_zero">Hide zero-total rows</option>
+              <option value="show_zero">Show zero-total rows</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ===== Receivables table ===== -->
         <table id="recv_table" class="o_recv__table table table-sm table-striped">
+          <!-- Fixed column widths so header & rows always align -->
+          <colgroup>
+            <col class="o-recv-col--name"/>
+            <col class="o-recv-col--amt"/><!-- Current -->
+            <col class="o-recv-col--amt"/><!-- 1–30  -->
+            <col class="o-recv-col--amt"/><!-- 31–60 -->
+            <col class="o-recv-col--amt"/><!-- 61–90 -->
+            <col class="o-recv-col--amt"/><!-- 90+   -->
+            <col class="o-recv-col--amt"/><!-- Total -->
+          </colgroup>
+
           <thead>
             <tr>
               <th>Customer</th>
-              <th class="text-end">Total</th>
               <th class="text-end">Current</th>
               <th class="text-end">1–30</th>
               <th class="text-end">31–60</th>
               <th class="text-end">61–90</th>
               <th class="text-end">90+</th>
+              <th class="text-end">Total</th>
             </tr>
           </thead>
+
           <tbody>
             <t t-foreach="rows" t-as="r">
+              <!-- clickable main row -->
               <tr class="o-recv-row"
-              t-att-data-customer_code="(r.get('customer_code') or '').strip()"
-              t-att-data-customer_name="(r.get('customer_name') or r.get('customer') or '').strip()">
-              <td t-esc="r.get('customer_name') or r.get('customer')"/>
-              <td class="num" t-esc="fmt(r.get('total'))"/>
-              <td class="num col-current" t-esc="fmt(r.get('current'))"/>
-              <td class="num col-d0_30" t-esc="fmt(r.get('d0_30'))"/>
-              <td class="num col-d31_60" t-esc="fmt(r.get('d31_60'))"/>
-              <td class="num col-d61_90" t-esc="fmt(r.get('d61_90'))"/>
-              <td class="num col-d90p" t-esc="fmt(r.get('d90p'))"/>
-          </tr>
+                  t-att-data-customer_code="r.get('customer_code')"
+                  t-att-data-customer_name="(r.get('customer_name') or r.get('customer') or '').lower()"
+                  t-att-data-total="r.get('total') or 0"
+                  t-att-data-current="r.get('current') or 0"
+                  t-att-data-d0_30="r.get('d0_30') or 0"
+                  t-att-data-d31_60="r.get('d31_60') or 0"
+                  t-att-data-d61_90="r.get('d61_90') or 0"
+                  t-att-data-d90p="r.get('d90p') or 0">
+                <td t-esc="r.get('customer_name') or r.get('customer')"/>
+                <td class="num col-current" t-esc="fmt(r.get('current'))"/>
+                <td class="num col-d0_30" t-esc="fmt(r.get('d0_30'))"/>
+                <td class="num col-d31_60" t-esc="fmt(r.get('d31_60'))"/>
+                <td class="num col-d61_90" t-esc="fmt(r.get('d61_90'))"/>
+                <td class="num col-d90p"   t-esc="fmt(r.get('d90p'))"/>
+                <td class="num"            t-esc="fmt(r.get('total'))"/>
+              </tr>
 
+              <!-- hidden expander row -->
               <tr class="o-recv-expand">
                 <td colspan="7">
-                  <div class="o-recv-expand__body"><!-- filled by JS --></div>
+                  <div class="o-recv-expand__body"><!-- invoices filled by JS --></div>
                 </td>
               </tr>
             </t>

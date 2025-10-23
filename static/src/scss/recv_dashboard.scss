@@ -39,11 +39,9 @@
 .o_card--d61_90  { background-color: #fef2f2; border-color: #f87171; } /* red */
 .o_card--d90p    { background-color: #fee2e2; border-color: #ef4444; } /* dark red */
 
-/* ===== TABLE ===== */
+/* ===== BASE TABLE LEGACY (kept for Bootstrap .table) ===== */
 .table th,
-.table td {
-  padding: 6px 8px;
-}
+.table td { padding: 6px 8px; }
 
 .table .col-current { background-color: #f0fdf4; } /* light green tint */
 .table .col-d0_30   { background-color: #fffbea; } /* light yellow */
@@ -51,9 +49,7 @@
 .table .col-d61_90  { background-color: #fef2f2; } /* light red */
 .table .col-d90p    { background-color: #fee2e2; } /* dark red tint */
 
-.text-end {
-  text-align: right;
-}
+.text-end { text-align: right; }
 
 /* =======================
    NAVIGATION TABS (Dashboard ↔ Charts)
@@ -76,9 +72,7 @@
   transition: all 0.15s ease;
 }
 
-.o_recv__nav .tab:hover {
-  background: #f8fafc;
-}
+.o_recv__nav .tab:hover { background: #f8fafc; }
 
 .o_recv__nav .tab.active {
   background: #eef2ff;
@@ -126,26 +120,77 @@
       grid-column: span 2;
       height: 340px;
 
-      canvas {
-        height: 240px !important;
-      }
+      canvas { height: 240px !important; }
     }
   }
 }
-/* ===== ROW EXPANDER ===== */
+
+/* =======================
+   RECEIVABLES TABLE (aligned headers & fixed widths)
+   - Requires the <colgroup> in the XML template
+========================= */
+
+.o_recv__table {
+  width: 100%;
+  table-layout: fixed;            /* ensures <colgroup> widths are respected */
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.o_recv__table th,
+.o_recv__table td {
+  padding: 8px 10px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.o_recv__table thead th {
+  position: sticky;
+  top: 0;                         /* sticks under Odoo top bar (page scroll) */
+  z-index: 2;
+  background: var(--o-view-background, #fff);
+  box-shadow: 0 1px 0 rgba(0,0,0,.06);
+}
+
+/* Explicit column widths via colgroup */
+.o_recv__table col.o-recv-col--name { width: 42%; }
+.o_recv__table col.o-recv-col--amt  { width: 9.6%; } /* 6 numeric columns ≈ 58% total */
+
+@media (max-width: 1200px) {
+  .o_recv__table col.o-recv-col--name { width: 36%; }
+  .o_recv__table col.o-recv-col--amt  { width: 10.8%; }
+}
+
+/* Number alignment */
+.o_recv__table .num,
+.o_recv__table th.text-end { text-align: right; }
+
+/* Bucket tints applied to both header cells and data cells */
+.o_recv__table .col-current { background-color: #f0fdf4; }
+.o_recv__table .col-d0_30   { background-color: #fffbea; }
+.o_recv__table .col-d31_60  { background-color: #fff7ed; }
+.o_recv__table .col-d61_90  { background-color: #fef2f2; }
+.o_recv__table .col-d90p    { background-color: #fee2e2; }
+
+/* Negative values styling (optional, works with class set in JS or server) */
+.o_recv__table .num.negative { color: #b91c1c; }    /* red-700 */
+.o_recv__table .num:has(span.negative) { color: #b91c1c; }
+
+/* Slight row hover for clarity */
+.o_recv__table tbody tr:hover { background: #f9fafb; }
+
+/* =======================
+   ROW EXPANDER (invoice details)
+========================= */
 #recv_table .o-recv-row { cursor: pointer; }
 #recv_table .o-recv-row:hover { background: #f9fafb; }
 
 .o-recv-expand { display: none; background: #fbfbfb; }
 .o-recv-expand.open { display: table-row; }
 
-.o-recv-expand td {
-  padding: 0 !important;
-}
+.o-recv-expand td { padding: 0 !important; }
 
-.o-recv-expand__body {
-  padding: 10px 12px;
-}
+.o-recv-expand__body { padding: 10px 12px; }
 
 .o-recv-expand__loading,
 .o-recv-expand__empty,
@@ -163,6 +208,9 @@
   margin: 2px 0 6px 0;
   font-weight: 600;
 }
+/* Make sure expander row always shows when opened */
+.o-recv-expand.open { display: table-row !important; }
+
 
 .badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 12px; }
 .badge-current { background: #ecfdf5; color: #065f46; }
@@ -189,3 +237,33 @@
 .o-recv-expand__table th { background: #f9fafb; text-align: left; }
 .o-recv-expand__table .num { text-align: right; }
 
+/* Toolbar */
+.o-recv-tools {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 8px 0 10px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.o-recv-tools__left,
+.o-recv-tools__right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.o-recv-input {
+  min-width: 260px;
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.o-recv-select {
+  padding: 6px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #fff;
+}

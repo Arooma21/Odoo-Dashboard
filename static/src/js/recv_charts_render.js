@@ -13,11 +13,11 @@ const shorten = (t, m = 24) => (t && t.length > m ? t.slice(0, m - 1) + "…" : 
 
 // Unified colors (map to ["Current","1–30","31–60","61–90","90+"])
 const BUCKET_COLORS = [
-  "#60a5fa", // Current (blue)
-  "#f472b6", // 1–30 (pink)
-  "#f59e0b", // 31–60 (amber)
-  "#eab308", // 61–90 (yellow/orange)
-  "#ef4444", // 90+ (RED)
+  "#22c55e", // Current (green)
+  "#facc15", // 1–30 (yellow)
+  "#f97316", // 31–60 (amber)
+  "#f87171", // 61-90 (red)
+  "#ef4444", // 90+ (dark RED)
 ];
 
 function renderCharts() {
