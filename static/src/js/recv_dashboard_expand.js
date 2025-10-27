@@ -1,133 +1,174 @@
 /** @odoo-module **/
 
-// ---------- small helpers ----------
-const fmt = (n) => Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+(function () {
+  'use strict';
 
-function groupByBucket(rows) {
-  const b = { current: [], d0_30: [], d31_60: [], d61_90: [], d90p: [] };
-  (rows || []).forEach(r => {
-    const key = (r.bucket || "current").toLowerCase();
-    (b[key] || b.current).push(r);
-  });
-  return b;
-}
+  // --- helpers ---------------------------------------------------------------
+  const fmt3 = (n) =>
+    Number(n || 0).toLocaleString(undefined, {
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3,
+    });
 
-function postJson(url, payload) {
-  return fetch(url, {
-    method: "POST",
-    credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload || {}),
-  }).then(r => r.json());
-}
+  const fmtBlank = (n) => {
+    const v = Number(n || 0);
+    return Math.abs(v) < 0.0005 ? "" : fmt3(v);
+  };
 
-// ---------- renderer ----------
-function renderInvoices(rows) {
-  if (!rows || !rows.length) {
-    return "<div class='o-recv-expand__empty'>No invoices found.</div>";
+  const escapeHtml = (s) =>
+    (s || "").replace(/[&<>"']/g, (m) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m]));
+
+  function postJson(url, payload) {
+    return fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(payload || {}),
+    }).then((r) => r.json());
   }
 
-  // normalize field names coming from the API (defensive)
-  const norm = rows.map(r => ({
-    DATE: r.DATEINVC || r.date || "",
-    IDORDERNBR: r.IDORDERNBR || r.order || "",
-    IDCUSTPO: r.IDCUSTPO || r.customer_po || "",
-    DESCINVC: r.DESCINVC || r.description || "",
-    AMT: Number(r.AMTINVCHC ?? r.amount ?? 0),
-    BUCKET: (r.bucket || "current").toLowerCase(),
-  }));
+  // --- renderer ---------------------------------------------------------------
+  function renderInvoiceGridAligned(rows) {
+    const list = rows || [];
+    if (!list.length) {
+      return "<div class='o-recv-expand__empty'>No invoices found.</div>";
+    }
 
-  const by = groupByBucket(norm);
-  const sectionsOrder = [
-    ["current", "Current"],
-    ["d0_30", "1–30"],
-    ["d31_60", "31–60"],
-    ["d61_90", "61–90"],
-    ["d90p",   "90+"],
-  ];
+    // bucket totals
+    const totals = { current: 0, d0_30: 0, d31_60: 0, d61_90: 0, d90p: 0, grand: 0 };
 
-  const sectionsHtml = sectionsOrder.map(([key, label]) => {
-    const items = by[key];
-    if (!items || !items.length) return "";
+    const trs = list
+      .map((r) => {
+        const b = (r.bucket || "").toLowerCase();
+        const amt = Number(r.AMTINVCHC || 0);
+        if (b in totals) totals[b] += amt;
+        totals.grand += amt;
 
-    const total = items.reduce((s, r) => s + (r.AMT || 0), 0);
+        const cells = { current: "", d0_30: "", d31_60: "", d61_90: "", d90p: "" };
+        if (b in cells) cells[b] = fmtBlank(amt);
 
-    const rowsHtml = items.map(r => `
-      <tr>
-        <td>${r.DATE || ""}</td>
-        <td>${r.IDORDERNBR || ""}</td>
-        <td>${r.IDCUSTPO || ""}</td>
-        <td>${r.DESCINVC || ""}</td>
-        <td class="num">${fmt(r.AMT)}</td>
+        return `
+          <tr>
+            <td>
+              <div class="o-recv-invwrap">
+                <div class="o-recv-grid3">
+                  <div class="inv">${escapeHtml(r.IDINV || "")}</div>
+                  <div class="date">${escapeHtml(r.DATEINVC || "")}</div>
+                  <div class="desc">${escapeHtml(r.DESCINVC || "")}</div>
+                </div>
+              </div>
+            </td>
+            <td class="num">${cells.current}</td>
+            <td class="num">${cells.d0_30}</td>
+            <td class="num">${cells.d31_60}</td>
+            <td class="num">${cells.d61_90}</td>
+            <td class="num">${cells.d90p}</td>
+            <td class="num">${fmtBlank(amt)}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    const trow = `
+      <tr class="o-recv-total">
+        <td></td>
+        <td class="num">${fmtBlank(totals.current)}</td>
+        <td class="num">${fmtBlank(totals.d0_30)}</td>
+        <td class="num">${fmtBlank(totals.d31_60)}</td>
+        <td class="num">${fmtBlank(totals.d61_90)}</td>
+        <td class="num">${fmtBlank(totals.d90p)}</td>
+        <td class="num">${fmtBlank(totals.grand)}</td>
       </tr>
-    `).join("");
-
-    // section block
-    return `
-      <div class="o-recv-expand__section">
-        <div class="o-recv-expand__sectionHeader">
-          <span class="badge badge-${key}">${label}</span>
-          <span class="o-recv-expand__sectionTotal">Total: ${fmt(total)}</span>
-        </div>
-        <table class="o-recv-expand__table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Order #</th>
-              <th>Customer PO</th>
-              <th>Description</th>
-              <th class="num">Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rowsHtml}
-          </tbody>
-        </table>
-      </div>
     `;
-  }).join("");
 
-  return sectionsHtml || "<div class='o-recv-expand__empty'>No invoices found.</div>";
-}
+    return `
+      <table class="o-recv-align">
+        <colgroup>
+          <col class="o-recv-col--name" />
+          <col class="o-recv-col--amt" />
+          <col class="o-recv-col--amt" />
+          <col class="o-recv-col--amt" />
+          <col class="o-recv-col--amt" />
+          <col class="o-recv-col--amt" />
+          <col class="o-recv-col--amt" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th>
+              <div class="o-recv-invwrap">
+                <div class="o-recv-grid3">
+                  <div class="inv"><strong>Invoice #</strong></div>
+                  <div class="date"><strong>Date</strong></div>
+                  <div class="desc"><strong>Description</strong></div>
+                </div>
+              </div>
+            </th>
+            <th></th><th></th><th></th><th></th><th></th><th></th>
+          </tr>
+        </thead>
+        <tbody>${trs}</tbody>
+        <tfoot>${trow}</tfoot>
+      </table>
+    `;
+  }
 
-// ---------- behavior (expand/collapse + fetch) ----------
-function setupExpandableRows() {
-  const tbl = document.getElementById("recv_table");
-  if (!tbl) return;
+  // --- handlers ---------------------------------------------------------------
+  function bindExpand() {
+    const table = document.getElementById("recv_table");
+    if (!table) return;
 
-  tbl.addEventListener("click", async (ev) => {
-    const row = ev.target.closest("tr.o-recv-row");
-    if (!row) return;
+    table.addEventListener("click", async (ev) => {
+      const row = ev.target.closest("tr.o-recv-row");
+      if (!row) return;
 
-    const expander = row.nextElementSibling;
-    if (!expander || !expander.classList.contains("o-recv-expand")) return;
+      const expandRow = row.nextElementSibling;
+      if (!expandRow || !expandRow.classList.contains("o-recv-expand")) return;
 
-    // toggle if already loaded
-    if (expander.dataset.loaded === "1") {
-      expander.classList.toggle("open");
-      return;
-    }
+      const body = expandRow.querySelector(".o-recv-expand__body");
+      if (!body) return;
 
-    // first time: fetch
-    const code = row.dataset.customer_code || null;
-    const name = row.dataset.customer_name || null;
+      const code = row.dataset.customer_code || null;
+      const name = row.dataset.customer_name || null;
+      const bucket = (window.__recvBucket || "").toLowerCase();
 
-    const body = expander.querySelector(".o-recv-expand__body");
-    body.innerHTML = "<div class='o-recv-expand__loading'>Loading…</div>";
+      if (expandRow.dataset.loaded === "1" && expandRow.dataset.bucket === bucket) {
+        expandRow.classList.toggle("open");
+        return;
+      }
 
-    try {
-      // support both {"params":{...}} and flat payload; we send flat
-      const res = await postJson("/recv/invoices", { customer_code: code, customer_name: name });
-      const rows = (res && res.result ? res.result.rows : res.rows) || [];
-      body.innerHTML = renderInvoices(rows);
-      expander.dataset.loaded = "1";
-      expander.classList.add("open");
-    } catch (e) {
-      // eslint-disable-next-line no-console
-      console.error(e);
-      body.innerHTML = "<div class='o-recv-expand__error'>Failed to load invoices.</div>";
-    }
+      body.innerHTML = "<div class='o-recv-expand__loading'>Loading…</div>";
+
+      try {
+        const res = await postJson("/recv/invoices", { customer_code: code, customer_name: name, bucket });
+        const rows = res.result?.rows || res.rows || [];
+        body.innerHTML = renderInvoiceGridAligned(rows);
+        expandRow.dataset.loaded = "1";
+        expandRow.dataset.bucket = bucket;
+        expandRow.classList.add("open");
+      } catch (e) {
+        console.error("[mssql_bridge] invoices fetch failed", e);
+        body.innerHTML = "<div class='o-recv-expand__error'>Failed to load invoices.</div>";
+      }
+    });
+  }
+
+  function bindCards() {
+    document.querySelectorAll(".o_example_cards .o_card[data-bucket]").forEach((el) => {
+      el.addEventListener("click", () => {
+        window.__recvBucket = (el.getAttribute("data-bucket") || "").toLowerCase();
+        document.querySelectorAll(".o-recv-expand.open").forEach((tr) => {
+          tr.classList.remove("open");
+          tr.dataset.loaded = "0";
+        });
+        document.querySelectorAll(".o_example_cards .o_card").forEach((c) => c.classList.remove("active"));
+        el.classList.add("active");
+      });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    if (!document.querySelector(".o_mssql_recv")) return;
+    bindCards();
+    bindExpand();
   });
-}
-
-document.addEventListener("DOMContentLoaded", setupExpandableRows);
+})();

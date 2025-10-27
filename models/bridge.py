@@ -25,6 +25,7 @@ class MssqlBridge(models.TransientModel):
         username = self._param("mssql.username")
         password = self._param("mssql.password")
         driver = self._param("mssql.driver", required=False, default="ODBC Driver 18 for SQL Server")
+
         conn_str = (
             f"DRIVER={{{driver}}};SERVER={server};DATABASE={database};UID={username};PWD={password};"
             "Encrypt=yes;TrustServerCertificate=yes;"
@@ -35,40 +36,54 @@ class MssqlBridge(models.TransientModel):
             raise UserError(_("MSSQL connection failed: %s") % e)
 
     # -------------------------------------------------------------------------
-    # Aging by customer (used by dashboard + charts)
+    # Aging by customer
+    #   - 3 decimals
+    #   - negative PY*/C* invoices are always 'current'
+    #   - include any non-zero customer total (e.g., 0.001)
     # -------------------------------------------------------------------------
     @api.model
     def get_aging_by_customer(self):
-        """
-        Return one row per customer with bucketed balances (open amounts only).
-        Keys: customer_code, customer_name, current, d0_30, d31_60, d61_90, d90p, total
-        """
         sql = """
             WITH ar AS (
                 SELECT
                     ob.IDCUST AS customer_code,
                     cu.NAMECUST AS customer_name,
-                    CAST(ob.AMTDUEHC AS DECIMAL(18,2)) AS balance,
-                    -- DATEDUE is DECIMAL(YYYYMMDD). Cast to INT, then to varchar(8), then to DATE (style 112).
-                    TRY_CONVERT(date, CONVERT(varchar(8), CAST(ob.DATEDUE AS int)), 112) AS due_date
+                    CAST(ob.AMTDUEHC AS DECIMAL(18,3)) AS balance,
+                    TRY_CONVERT(date, CONVERT(varchar(8), CAST(ob.DATEDUE AS int)), 112) AS due_date,
+                    ob.IDINVC AS idinv,
+                    CASE
+                        WHEN (ob.IDINVC LIKE 'P%%' OR ob.IDINVC LIKE 'C%%') AND ob.AMTDUEHC < 0 THEN 'current'
+                        WHEN DATEDIFF(day,
+                               TRY_CONVERT(date, CONVERT(varchar(8), CAST(ob.DATEDUE AS int)), 112),
+                               GETDATE()) < 0 THEN 'current'
+                        WHEN DATEDIFF(day,
+                               TRY_CONVERT(date, CONVERT(varchar(8), CAST(ob.DATEDUE AS int)), 112),
+                               GETDATE()) BETWEEN 0 AND 30 THEN 'd0_30'
+                        WHEN DATEDIFF(day,
+                               TRY_CONVERT(date, CONVERT(varchar(8), CAST(ob.DATEDUE AS int)), 112),
+                               GETDATE()) BETWEEN 31 AND 60 THEN 'd31_60'
+                        WHEN DATEDIFF(day,
+                               TRY_CONVERT(date, CONVERT(varchar(8), CAST(ob.DATEDUE AS int)), 112),
+                               GETDATE()) BETWEEN 61 AND 90 THEN 'd61_90'
+                        ELSE 'd90p'
+                    END AS bucket
                 FROM AROBL ob
                 JOIN ARCUS cu ON cu.IDCUST = ob.IDCUST
-                -- include *open* items of any sign; ignore zeroes
                 WHERE (ob.SWPAID IN ('0', 0) OR ob.SWPAID IS NULL)
                   AND ABS(ob.AMTDUEHC) <> 0
             )
             SELECT
                 customer_code,
                 MAX(customer_name) AS customer_name,
-                SUM(CASE WHEN DATEDIFF(day, due_date, GETDATE()) < 0  THEN balance ELSE 0 END) AS current_amt,
-                SUM(CASE WHEN DATEDIFF(day, due_date, GETDATE()) BETWEEN 0  AND 30 THEN balance ELSE 0 END) AS d0_30,
-                SUM(CASE WHEN DATEDIFF(day, due_date, GETDATE()) BETWEEN 31 AND 60 THEN balance ELSE 0 END) AS d31_60,
-                SUM(CASE WHEN DATEDIFF(day, due_date, GETDATE()) BETWEEN 61 AND 90 THEN balance ELSE 0 END) AS d61_90,
-                SUM(CASE WHEN DATEDIFF(day, due_date, GETDATE()) > 90 THEN balance ELSE 0 END) AS d90p,
+                SUM(CASE WHEN bucket = 'current' THEN balance ELSE 0 END) AS current_amt,
+                SUM(CASE WHEN bucket = 'd0_30'  THEN balance ELSE 0 END) AS d0_30,
+                SUM(CASE WHEN bucket = 'd31_60' THEN balance ELSE 0 END) AS d31_60,
+                SUM(CASE WHEN bucket = 'd61_90' THEN balance ELSE 0 END) AS d61_90,
+                SUM(CASE WHEN bucket = 'd90p'   THEN balance ELSE 0 END) AS d90p,
                 SUM(balance) AS total_amt
             FROM ar
             GROUP BY customer_code
-            HAVING ABS(SUM(balance)) > 0.005
+            HAVING ABS(SUM(balance)) > 0
             ORDER BY customer_code;
         """
 
@@ -97,48 +112,57 @@ class MssqlBridge(models.TransientModel):
                 pass
 
     # -------------------------------------------------------------------------
-    # Invoices for a customer — open items only (use AMTDUEHC)
-    # Returns: DATEINVC (from DATEDUE), IDORDERNBR, IDCUSTPO, DESCINVC, AMTINVCHC(open)
+    # Invoices for a single customer
     # -------------------------------------------------------------------------
-    # models/bridge.py  (inside class MssqlBridge)
-
     @api.model
-    def get_invoices_basic_by_customer(self, customer_code=None, customer_name=None):
-        """
-        Return open invoices (positive or credit) for a customer.
-        Matches by code and/or exact name (after trimming).
-        Fields returned:
-          DATEINVC (from DATEDUE for readability), IDORDERNBR, IDCUSTPO, DESCINVC, AMTINVCHC (= AMTDUEHC)
-        """
+    def get_invoices_basic_by_customer(self, customer_code=None, customer_name=None, bucket=None):
         code = (customer_code or "").strip()
         name = (customer_name or "").strip()
+        bkt  = (bucket or "").strip().lower()
 
-        conds, params = [], []
+        where, params = [], []
         if code:
-            conds.append("LTRIM(RTRIM(bl.IDCUST)) = LTRIM(RTRIM(?))")
+            where.append("LTRIM(RTRIM(bl.IDCUST)) = LTRIM(RTRIM(?))")
             params.append(code)
-        if name:
-            conds.append("LTRIM(RTRIM(cu.NAMECUST)) = LTRIM(RTRIM(?))")
+        elif name:
+            where.append("LTRIM(RTRIM(cu.NAMECUST)) = LTRIM(RTRIM(?))")
             params.append(name)
-
-        if not conds:
+        else:
             return []
 
-        where_clause = " AND (" + " OR ".join(conds) + ")"
+        bucket_case = """
+            CASE
+                WHEN (bl.IDINVC LIKE 'P%%' OR bl.IDINVC LIKE 'C%%') AND bl.AMTDUEHC < 0 THEN 'current'
+                WHEN DATEDIFF(day, TRY_CONVERT(date, CONVERT(varchar(8), CAST(bl.DATEDUE AS int)), 112), GETDATE()) < 0  THEN 'current'
+                WHEN DATEDIFF(day, TRY_CONVERT(date, CONVERT(varchar(8), CAST(bl.DATEDUE AS int)), 112), GETDATE()) BETWEEN 0  AND 30 THEN 'd0_30'
+                WHEN DATEDIFF(day, TRY_CONVERT(date, CONVERT(varchar(8), CAST(bl.DATEDUE AS int)), 112), GETDATE()) BETWEEN 31 AND 60 THEN 'd31_60'
+                WHEN DATEDIFF(day, TRY_CONVERT(date, CONVERT(varchar(8), CAST(bl.DATEDUE AS int)), 112), GETDATE()) BETWEEN 61 AND 90 THEN 'd61_90'
+                ELSE 'd90p'
+            END
+        """
+
+        bucket_filter = ""
+        if bkt in ("current", "d0_30", "d31_60", "d61_90", "d90p"):
+            bucket_filter = f" AND {bucket_case} = ? "
+            params.append(bkt)
 
         sql = f"""
             SELECT
-                -- user-friendly date: due date
-                TRY_CONVERT(date, CONVERT(varchar(8), CAST(bl.DATEDUE AS int)), 112) AS DATEINVC,
+                bl.IDINVC                                               AS IDINV,
+                TRY_CONVERT(date, CONVERT(varchar(8), CAST(bl.DATEDUE   AS int)), 112) AS DATEINVC,
+                TRY_CONVERT(date, CONVERT(varchar(8), CAST(bl.DATEDUE   AS int)), 112) AS DUE_DATE,
                 bl.IDORDERNBR,
                 bl.IDCUSTPO,
                 bl.DESCINVC,
-                CAST(bl.AMTDUEHC AS DECIMAL(18,2)) AS AMTINVCHC
+                CAST(bl.AMTDUEHC AS DECIMAL(18,3))                      AS AMTINVCHC,
+                {bucket_case}                                          AS bucket
             FROM AROBL bl
-            JOIN ARCUS cu ON cu.IDCUST = bl.IDCUST
-            WHERE (bl.SWPAID IN ('0', 0) OR bl.SWPAID IS NULL)  -- open items
-              AND ABS(bl.AMTDUEHC) <> 0                         -- include credits
-              {where_clause}
+            {"JOIN ARCUS cu ON cu.IDCUST = bl.IDCUST" if name else ""}
+            WHERE
+                (bl.SWPAID IN ('0', 0) OR bl.SWPAID IS NULL)
+                AND ABS(bl.AMTDUEHC) <> 0
+                AND {" AND ".join(where)}
+                {bucket_filter}
             ORDER BY DATEINVC DESC, bl.IDORDERNBR;
         """
 
@@ -147,18 +171,98 @@ class MssqlBridge(models.TransientModel):
         try:
             cur = conn.cursor()
             cur.execute(sql, params)
-            for DATEINVC, IDORDERNBR, IDCUSTPO, DESCINVC, AMTINVCHC in cur.fetchall():
+            for IDINV, DATEINVC, DUE_DATE, IDORDERNBR, IDCUSTPO, DESCINVC, AMTINVCHC, BK in cur.fetchall():
                 rows.append({
-                    "DATEINVC": DATEINVC.isoformat() if DATEINVC else "",
+                    "IDINV": str(IDINV or ""),
+                    "DATEINVC": DATEINVC.isoformat() if hasattr(DATEINVC, "isoformat") else (str(DATEINVC) if DATEINVC else ""),
+                    "DUE_DATE": DUE_DATE.isoformat() if hasattr(DUE_DATE, "isoformat") else (str(DUE_DATE) if DUE_DATE else ""),
                     "IDORDERNBR": str(IDORDERNBR or ""),
                     "IDCUSTPO": str(IDCUSTPO or ""),
                     "DESCINVC": DESCINVC or "",
                     "AMTINVCHC": float(AMTINVCHC or 0.0),
+                    "bucket": (BK or "").lower(),
                 })
             return rows
+        except Exception as e:
+            raise UserError(_("AROBL invoice query failed: %s") % e)
         finally:
             try:
                 conn.close()
             except Exception:
                 pass
 
+    # -------------------------------------------------------------------------
+    # Bucket-wide invoices
+    # -------------------------------------------------------------------------
+    @api.model
+    def get_invoices_by_bucket(self, bucket):
+        b = (bucket or "").strip().lower()
+        if b not in ("current", "d0_30", "d31_60", "d61_90", "d90p"):
+            b = "d0_30"
+
+        bucket_case = """
+            CASE
+                WHEN (bl.IDINVC LIKE 'P%%' OR bl.IDINVC LIKE 'C%%') AND bl.AMTDUEHC < 0 THEN 'current'
+                WHEN DATEDIFF(day,
+                        TRY_CONVERT(date, CONVERT(varchar(8), CAST(bl.DATEDUE AS int)), 112),
+                        GETDATE()) < 0  THEN 'current'
+                WHEN DATEDIFF(day,
+                        TRY_CONVERT(date, CONVERT(varchar(8), CAST(bl.DATEDUE AS int)), 112),
+                        GETDATE()) BETWEEN 0  AND 30 THEN 'd0_30'
+                WHEN DATEDIFF(day,
+                        TRY_CONVERT(date, CONVERT(varchar(8), CAST(bl.DATEDUE AS int)), 112),
+                        GETDATE()) BETWEEN 31 AND 60 THEN 'd31_60'
+                WHEN DATEDIFF(day,
+                        TRY_CONVERT(date, CONVERT(varchar(8), CAST(bl.DATEDUE AS int)), 112),
+                        GETDATE()) BETWEEN 61 AND 90 THEN 'd61_90'
+                ELSE 'd90p'
+            END
+        """
+
+        sql = f"""
+            SELECT
+                LTRIM(RTRIM(bl.IDCUST))                                    AS customer_code,
+                cu.NAMECUST                                                AS customer_name,
+                bl.IDINVC                                                  AS IDINV,
+                TRY_CONVERT(date, CONVERT(varchar(8), CAST(bl.DATEDUE AS int)), 112) AS DATEINVC,
+                TRY_CONVERT(date, CONVERT(varchar(8), CAST(bl.DATEDUE AS int)), 112) AS DUE_DATE,
+                bl.IDORDERNBR,
+                bl.IDCUSTPO,
+                bl.DESCINVC,
+                CAST(bl.AMTDUEHC AS DECIMAL(18,3))                         AS AMTINVCHC
+            FROM AROBL bl
+            JOIN ARCUS cu ON cu.IDCUST = bl.IDCUST
+            WHERE (bl.SWPAID IN ('0', 0) OR bl.SWPAID IS NULL)
+              AND ABS(bl.AMTDUEHC) <> 0
+              AND {bucket_case} = ?
+            ORDER BY cu.NAMECUST, DATEINVC DESC, bl.IDINVC;
+        """
+
+        conn = self._connect()
+        rows = []
+        try:
+            cur = conn.cursor()
+            cur.execute(sql, [b])
+            for rec in cur.fetchall():
+                (customer_code, customer_name, IDINV, DATEINVC, DUE_DATE,
+                 IDORDERNBR, IDCUSTPO, DESCINVC, AMTINVCHC) = rec
+
+                rows.append({
+                    "customer_code": (customer_code or "").strip(),
+                    "customer_name": customer_name or "",
+                    "IDINV": str(IDINV or ""),
+                    "DATEINVC": DATEINVC.isoformat() if hasattr(DATEINVC, "isoformat") else (str(DATEINVC) if DATEINVC else ""),
+                    "DUE_DATE": DUE_DATE.isoformat() if hasattr(DUE_DATE, "isoformat") else (str(DUE_DATE) if DUE_DATE else ""),
+                    "IDORDERNBR": str(IDORDERNBR or ""),
+                    "IDCUSTPO": str(IDCUSTPO or ""),
+                    "DESCINVC": DESCINVC or "",
+                    "AMTINVCHC": float(AMTINVCHC or 0.0),
+                })
+            return rows
+        except Exception as e:
+            raise UserError(_("AROBL invoice query failed: %s") % e)
+        finally:
+            try:
+                conn.close()
+            except Exception:
+                pass

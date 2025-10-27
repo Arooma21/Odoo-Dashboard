@@ -14,8 +14,8 @@ const shorten = (t, m = 24) => (t && t.length > m ? t.slice(0, m - 1) + "…" : 
 // Unified colors (map to ["Current","1–30","31–60","61–90","90+"])
 const BUCKET_COLORS = [
   "#22c55e", // Current (green)
-  "#facc15", // 1–30 (yellow)
-  "#f97316", // 31–60 (amber)
+  "#ffee8c", // 1–30 (yellow)
+  "#ffc067", // 31–60 (amber)
   "#f87171", // 61-90 (red)
   "#ef4444", // 90+ (dark RED)
 ];

@@ -7,7 +7,7 @@
       <t t-call-assets="web.assets_backend" t-css="false"/>
 
       <!-- number formatter -->
-      <t t-set="fmt" t-value="lambda n: ('{:,.2f}'.format(float(n or 0.0)))"/>
+      <t t-set="fmt" t-value="lambda n: ('{:,.3f}'.format(float(n or 0.0)))"/>
 
       <div class="o_mssql_recv">
 
@@ -33,53 +33,55 @@
           <a href="/recv/charts" class="tab">Charts</a>
         </div>
 
-        <!-- summary cards -->
+        <!-- summary cards (clickable) -->
         <div class="o_example_cards">
-          <div class="o_card o_card--current">
+          <!-- Current -->
+          <a class="o_card o_card--current" href="/recv/bucket/current">
             <div class="o_card_title">Current</div>
             <div class="o_card_value" t-esc="fmt(totals.get('current'))"/>
-          </div>
-          <div class="o_card o_card--d0_30">
+          </a>
+
+          <!-- 1–30 -->
+          <a class="o_card o_card--d0_30" href="/recv/bucket/d0_30">
             <div class="o_card_title">1–30 Days</div>
             <div class="o_card_value" t-esc="fmt(totals.get('d0_30'))"/>
-          </div>
-          <div class="o_card o_card--d31_60">
+          </a>
+
+          <!-- 31–60 -->
+          <a class="o_card o_card--d31_60" href="/recv/bucket/d31_60">
             <div class="o_card_title">31–60 Days</div>
             <div class="o_card_value" t-esc="fmt(totals.get('d31_60'))"/>
-          </div>
-          <div class="o_card o_card--d61_90">
+          </a>
+
+          <!-- 61–90 -->
+          <a class="o_card o_card--d61_90" href="/recv/bucket/d61_90">
             <div class="o_card_title">61–90 Days</div>
             <div class="o_card_value" t-esc="fmt(totals.get('d61_90'))"/>
-          </div>
-          <div class="o_card o_card--d90p">
+          </a>
+
+          <!-- 90+ -->
+          <a class="o_card o_card--d90p" href="/recv/bucket/d90p">
             <div class="o_card_title">90+ Days</div>
             <div class="o_card_value" t-esc="fmt(totals.get('d90p'))"/>
-          </div>
+          </a>
+
+          <!-- Total -->
           <div class="o_card">
             <div class="o_card_title">Total Receivables</div>
             <div class="o_card_value" t-esc="fmt(totals.get('total'))"/>
           </div>
-        </div>
+        </div> <!-- /.o_example_cards -->
 
-        <!-- toolbar: search + filters (non-destructive addition) -->
+        <!-- ===== Receivables table toolbar ===== -->
         <div class="o-recv-tools">
           <div class="o-recv-tools__left">
             <input id="recvSearch" class="o-recv-input" type="search" placeholder="Search customers… (min 2 chars)"/>
             <button id="recvClear" class="btn btn-light btn-sm" type="button">Clear</button>
           </div>
           <div class="o-recv-tools__right">
-            <select id="recvBucket" class="o-recv-select">
-              <option value="">All buckets</option>
-              <option value="current">Current ≠ 0</option>
-              <option value="d0_30">1–30 ≠ 0</option>
-              <option value="d31_60">31–60 ≠ 0</option>
-              <option value="d61_90">61–90 ≠ 0</option>
-              <option value="d90p">90+ ≠ 0</option>
-              <option value="hasneg">Has negative (any bucket)</option>
-            </select>
             <select id="recvZero" class="o-recv-select">
-              <option value="hide_zero">Hide zero-total rows</option>
               <option value="show_zero">Show zero-total rows</option>
+              <option value="hide_zero">Hide zero-total rows</option>
             </select>
           </div>
         </div>
@@ -88,6 +90,7 @@
         <table id="recv_table" class="o_recv__table table table-sm table-striped">
           <!-- Fixed column widths so header & rows always align -->
           <colgroup>
+            <col class="o-recv-col--serial"/>
             <col class="o-recv-col--name"/>
             <col class="o-recv-col--amt"/><!-- Current -->
             <col class="o-recv-col--amt"/><!-- 1–30  -->
@@ -99,6 +102,7 @@
 
           <thead>
             <tr>
+              <th class="serial text-center">#</th>
               <th>Customer</th>
               <th class="text-end">Current</th>
               <th class="text-end">1–30</th>
@@ -110,17 +114,14 @@
           </thead>
 
           <tbody>
-            <t t-foreach="rows" t-as="r">
-              <!-- clickable main row -->
+            <!-- safer than relying on idx; we maintain our own serial -->
+            <t t-set="serial" t-value="0"/>
+            <t t-foreach="rows or []" t-as="r">
+              <t t-set="serial" t-value="serial + 1"/>
               <tr class="o-recv-row"
                   t-att-data-customer_code="r.get('customer_code')"
-                  t-att-data-customer_name="(r.get('customer_name') or r.get('customer') or '').lower()"
-                  t-att-data-total="r.get('total') or 0"
-                  t-att-data-current="r.get('current') or 0"
-                  t-att-data-d0_30="r.get('d0_30') or 0"
-                  t-att-data-d31_60="r.get('d31_60') or 0"
-                  t-att-data-d61_90="r.get('d61_90') or 0"
-                  t-att-data-d90p="r.get('d90p') or 0">
+                  t-att-data-customer_name="r.get('customer_name')">
+                <td class="num text-center" t-esc="serial"/>
                 <td t-esc="r.get('customer_name') or r.get('customer')"/>
                 <td class="num col-current" t-esc="fmt(r.get('current'))"/>
                 <td class="num col-d0_30" t-esc="fmt(r.get('d0_30'))"/>
@@ -132,14 +133,19 @@
 
               <!-- hidden expander row -->
               <tr class="o-recv-expand">
-                <td colspan="7">
+                <td colspan="8">
                   <div class="o-recv-expand__body"><!-- invoices filled by JS --></div>
                 </td>
               </tr>
             </t>
+
+            <tr t-if="not (rows and len(rows))">
+              <td colspan="8" class="text-muted">No data.</td>
+            </tr>
           </tbody>
         </table>
-      </div>
+
+      </div> <!-- /.o_mssql_recv -->
     </t>
   </template>
 </odoo>
