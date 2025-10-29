@@ -1,38 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <template id="recv_bucket_page" name="Receivables Bucket Page">
+  <template id="recv_bucket_page" name="Receivables - Bucket Page">
     <t t-call="web.layout">
-      <t t-set="title">Receivables – <t t-esc="bucket_label"/></t>
-      <t t-call-assets="web.assets_backend" t-js="false"/>
-      <t t-call-assets="web.assets_backend" t-css="false"/>
+      <t t-set="title">Invoices — <t t-esc="bucket_label"/></t>
 
-      <!-- number formatter -->
-      <t t-set="fmt" t-value="lambda n: ('{:,.3f}'.format(float(n or 0.0)))"/>
+      <!-- Load backend bundle once, then your module bundle -->
+      <t t-call-assets="web.assets_backend"/>
 
-      <div class="o_mssql_recv">
-        <div class="o_recv__topbar" style="margin-bottom:.5rem">
+      <div class="o_mssql_recv o_recv_bucket">
+
+        <!-- Top bar -->
+        <div class="o_recv__topbar">
           <a href="/recv/dashboard" class="btn btn-light btn-sm">← Back to Dashboard</a>
-          <span class="o_recv__stamp" style="margin-left:.5rem">
-            <small>Last updated: <strong t-esc="updated_at"/></small>
+          <span class="o_recv__stamp">
+            Last updated: <strong t-esc="updated_at"/>
           </span>
         </div>
 
-        <h2 t-esc="'Invoices – %s' % bucket_label"/>
-        <p class="text-muted" style="margin-top:-.25rem">Open invoices in this bucket across all customers.</p>
+        <h2>Invoices — <t t-esc="bucket_label"/></h2>
+        <p class="text-muted">Open invoices in this bucket across all customers.</p>
 
-        <div style="margin:.5rem 0 1rem">
-          <strong>Total:</strong>
-          <span t-esc="fmt(total)"/>
+        <!-- Toolbar -->
+        <div class="o-bucket-tools">
+          <div class="o-bucket-tools__left">
+            <input id="bucketSearch"
+                   class="o-recv-input"
+                   type="search"
+                   placeholder="Search (customer code, customer, invoice #, description)…"/>
+            <button id="bucketClear" type="button" class="btn btn-light btn-sm">Clear</button>
+          </div>
+          <div class="o-bucket-tools__right">
+            <span class="o-bucket-total">
+              Total: <strong id="bucketTotal" t-esc="'{:,.3f}'.format(total or 0.0)"/>
+            </span>
+          </div>
         </div>
 
-        <table class="o_recv__table table table-sm table-striped">
+        <!-- Table -->
+        <table id="bucketTable" class="o_recv__table o-bucket__table table table-sm table-striped">
           <colgroup>
-            <col style="width:16%"/>
-            <col style="width:24%"/>
-            <col style="width:10%"/>
-            <col style="width:10%"/>
-            <col style="width:auto"/>
-            <col style="width:12%"/>
+            <col style="width:120px"/>
+            <col/>
+            <col style="width:110px"/>
+            <col style="width:120px"/>
+            <col/>
+            <col style="width:140px"/>
           </colgroup>
           <thead>
             <tr>
@@ -45,21 +57,34 @@
             </tr>
           </thead>
           <tbody>
-            <t t-if="not rows">
-              <tr><td colspan="6" class="text-center text-muted">No open invoices in this bucket.</td></tr>
-            </t>
-            <t t-foreach="rows" t-as="r">
-              <tr>
+            <t t-foreach="rows or []" t-as="r">
+              <tr class="o-bucket-row"
+                  t-att-data-q="(r.get('customer_code','') + ' ' + r.get('customer_name','') + ' ' + r.get('IDINV','') + ' ' + r.get('DESCINVC','')).lower()">
                 <td t-esc="r.get('customer_code')"/>
                 <td t-esc="r.get('customer_name')"/>
-                <td class="o-recv-invnum" t-esc="r.get('IDINV')"/>
+                <td class="o-bucket__inv" t-esc="r.get('IDINV')"/>
                 <td t-esc="r.get('DATEINVC')"/>
                 <td t-esc="r.get('DESCINVC')"/>
-                <td class="num" t-esc="fmt(r.get('AMTINVCHC'))"/>
+                <!-- Color matches current bucket (uses t-attf- formatting) -->
+                <td t-attf-class="num o-bucket-amt col-#{bucket}">
+                  <t t-esc="'{:,.3f}'.format(r.get('AMTINVCHC') or 0.0)"/>
+                </td>
               </tr>
             </t>
+            <tr t-if="not (rows and len(rows))">
+              <td colspan="6" class="text-muted">No invoices.</td>
+            </tr>
           </tbody>
+          <tfoot>
+            <tr>
+              <th colspan="5" class="text-end">Total</th>
+              <th class="text-end">
+                <span id="bucketTotalFoot" t-esc="'{:,.3f}'.format(total or 0.0)"/>
+              </th>
+            </tr>
+          </tfoot>
         </table>
+
       </div>
     </t>
   </template>

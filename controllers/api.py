@@ -110,16 +110,61 @@ class RecvAPI(http.Controller):
             b = "d0_30"
 
         Bridge = request.env["mssql.bridge"].sudo()
-        rows = Bridge.get_invoices_by_bucket(b) or []
-        total = sum(float(r.get("AMTINVCHC") or 0.0) for r in rows)
 
-        return request.render(
-            "mssql_bridge.recv_bucket_page",
-            {
-                "bucket": b,
-                "bucket_label": BUCKETS[b],
-                "rows": rows,
-                "total": total,
-                "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
-            },
-        )
+        # 1) Exact customer universe + bucket amounts from the dashboard
+        dash_rows = Bridge.get_aging_by_customer() or []
+
+        rows = []
+        for r in dash_rows:
+            code = (r.get("customer_code") or "").strip()
+            name = (r.get("customer_name") or "").strip()
+            if not code and not name:
+                continue
+
+            # Bucket amount the dashboard used for THIS customer
+            # (keys on your dashboard rows are already: current, d0_30, d31_60, d61_90, d90p)
+            cust_bucket_amt = float(r.get(b) or 0.0)
+
+            # If the customer's bucket nets to zero on the dashboard, skip them completely
+            if abs(round(cust_bucket_amt, 3)) < 0.0005:
+                continue
+
+            invs = Bridge.get_invoices_basic_by_customer(
+                customer_code=code,
+                customer_name=name,
+                bucket=b,
+            ) or []
+
+            # Lines subtotal for this customer in this bucket
+            subtotal = round(sum(float(inv.get("AMTINVCHC") or 0.0) for inv in invs), 3)
+
+            # If the fetched lines net to ~0, skip (offsetting invoice/credit not applied yet)
+            if abs(subtotal) < 0.0005:
+                continue
+
+            for inv in invs:
+                rows.append({
+                    "customer_code": code,
+                    "customer_name": name,
+                    "IDINV": inv.get("IDINV"),
+                    "DATEINVC": inv.get("DATEINVC"),
+                    "DUE_DATE": inv.get("DUE_DATE"),
+                    "IDORDERNBR": inv.get("IDORDERNBR"),
+                    "IDCUSTPO": inv.get("IDCUSTPO"),
+                    "DESCINVC": inv.get("DESCINVC"),
+                    "AMTINVCHC": float(inv.get("AMTINVCHC") or 0.0),
+                })
+
+        # Sort and total (unchanged)
+        rows.sort(key=lambda x: (x.get("customer_name") or "", x.get("DATEINVC") or "", x.get("IDINV") or ""),
+                  reverse=True)
+        total = round(sum(float(r.get("AMTINVCHC") or 0.0) for r in rows), 3)
+
+        qcontext = {
+            "bucket": b,
+            "bucket_label": BUCKETS[b],
+            "rows": rows,
+            "total": total,
+            "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        }
+        return request.render("mssql_bridge.recv_bucket_page", qcontext)

@@ -1,9 +1,7 @@
 /* =======================
-   RECEIVABLES DASHBOARD
-========================= */
-.o_mssql_recv {
-  padding: 16px;
-}
+   RECEIVABLES DASHBOARD + CHARTS
+======================= */
+.o_mssql_recv { padding: 16px; }
 
 /* ===== SUMMARY CARDS ===== */
 .o_example_cards {
@@ -12,341 +10,159 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   margin-bottom: 16px;
 }
-
 .o_card {
   border-radius: 12px;
   padding: 16px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
   background: var(--o-view-background, #fff);
   border: 1px solid var(--o-gray-200);
-  cursor: pointer;
-  user-select: none;
+  cursor: pointer; user-select: none;
 }
 .o_card_title { font-weight: 600; margin-bottom: 6px; color: var(--o-gray-700); }
 .o_card_value { font-size: 20px; font-weight: 500; }
-
-.o_card.active {
-  outline: 2px solid #6366f1;
-  box-shadow: 0 0 0 2px rgba(99,102,241,.15);
-}
+.o_card.active { outline: 2px solid #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,.15); }
 
 /* Card tints */
-.o_card--current { background-color: #ecfdf5; border-color: #6ee7b7; }
-.o_card--d0_30   { background-color: #fffbeb; border-color: #fcd34d; }
-.o_card--d31_60  { background-color: #fff7ed; border-color: #fb923c; }
-.o_card--d61_90  { background-color: #fef2f2; border-color: #f87171; }
-.o_card--d90p    { background-color: #fee2e2; border-color: #ef4444; }
+.o_card--current { background-color:#ecfdf5; border-color:#6ee7b7; }
+.o_card--d0_30   { background-color:#fffbeb; border-color:#fcd34d; }
+.o_card--d31_60  { background-color:#fff7ed; border-color:#fb923c; }
+.o_card--d61_90  { background-color:#fef2f2; border-color:#f87171; }
+.o_card--d90p    { background-color:#fee2e2; border-color:#ef4444; }
 
-/* ===== Bootstrap table base (legacy) ===== */
-.table th, .table td { padding: 6px 8px; }
-.table .col-current { background-color: #f0fdf4; }
-.table .col-d0_30   { background-color: #fffbea; }
-.table .col-d31_60  { background-color: #fff7ed; }
-.table .col-d61_90  { background-color: #fef2f2; }
-.table .col-d90p    { background-color: #fee2e2; }
-.text-end { text-align: right; }
-
-/* =======================
-   NAVIGATION TABS
-========================= */
-.o_recv__nav {
-  display: inline-flex;
-  gap: 0.5rem;
-  margin: 0.25rem 0 1rem 0;
-}
+/* ===== NAV TABS ===== */
+.o_recv__nav { display:inline-flex; gap:.5rem; margin:.25rem 0 1rem; }
 .o_recv__nav .tab {
-  display: inline-block;
-  padding: 0.35rem 0.75rem;
-  border: 1px solid var(--o-gray-200);
-  border-radius: 8px;
-  background: #fff;
-  color: var(--o-gray-800);
-  text-decoration: none;
-  font-weight: 500;
-  transition: all 0.15s ease;
+  display:inline-block; padding:.35rem .75rem; border:1px solid var(--o-gray-200);
+  border-radius:8px; background:#fff; color:var(--o-gray-800); text-decoration:none; font-weight:500;
+  transition:all .15s ease;
 }
-.o_recv__nav .tab:hover { background: #f8fafc; }
-.o_recv__nav .tab.active {
-  background: #eef2ff;
-  border-color: #c7d2fe;
-  color: #3730a3;
-}
+.o_recv__nav .tab:hover { background:#f8fafc; }
+.o_recv__nav .tab.active { background:#eef2ff; border-color:#c7d2fe; color:#3730a3; }
 
-/* =======================
-   CHARTS PAGE
-========================= */
+/* ===== CHARTS PAGE ===== */
 .o_mssql_recv_charts {
-  padding: 1.5rem;
-  h2 { font-size: 1.4rem; margin-bottom: 1rem; font-weight: 600; }
-  .charts-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-    gap: 1.5rem;
-  }
+  padding:1.5rem;
+  h2 { font-size:1.4rem; margin-bottom:1rem; font-weight:600; }
+  .charts-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(380px,1fr)); gap:1.5rem; }
   .chart-card {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-    padding: 1rem;
-    height: 320px;
-    h3 { font-size: 1rem; font-weight: 500; margin-bottom: 0.5rem; }
-    canvas { width: 100% !important; height: 230px !important; }
-    &.wide { grid-column: span 2; height: 340px;
-      canvas { height: 240px !important; }
-    }
+    background:#fff; border-radius:12px; box-shadow:0 1px 4px rgba(0,0,0,.05);
+    padding:1rem; height:320px;
+    h3 { font-size:1rem; font-weight:500; margin-bottom:.5rem; }
+    canvas { width:100%!important; height:230px!important; }
+    &.wide { grid-column:span 2; height:340px; canvas{height:240px!important;} }
   }
 }
 
-/* =======================
-   RECEIVABLES TABLE
-   (requires <colgroup> in template)
-========================= */
+/* ===== MAIN RECEIVABLES TABLE (dashboard only) ===== */
 .o_recv__table {
-  width: 100%;
-  table-layout: fixed;     /* respect colgroup widths */
-  border-collapse: separate;
-  border-spacing: 0;
+  width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0;
 }
-.o_recv__table th, .o_recv__table td {
-  padding: 8px 10px;
-  vertical-align: middle;
-  white-space: nowrap;
-}
+.o_recv__table th, .o_recv__table td { padding:8px 10px; vertical-align:middle; white-space:nowrap; }
 .o_recv__table thead th {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: var(--o-view-background, #fff);
-  box-shadow: 0 1px 0 rgba(0,0,0,.06);
+  position:sticky; top:0; z-index:2; background:var(--o-view-background,#fff);
+  box-shadow:0 1px 0 rgba(0,0,0,.06);
 }
 
 /* Column widths via colgroup */
-.o_recv__table col.o-recv-col--serial { width: 56px; }
-.o_recv__table col.o-recv-col--name   { width: 42%; }
-.o_recv__table col.o-recv-col--amt    { width: 9.6%; } /* six numeric columns ~58% */
-
-@media (max-width: 1200px) {
-  .o_recv__table col.o-recv-col--name { width: 36%; }
-  .o_recv__table col.o-recv-col--amt  { width: 10.8%; }
+.o_recv__table col.o-recv-col--serial { width:56px; }
+.o_recv__table col.o-recv-col--name   { width:42%; }
+.o_recv__table col.o-recv-col--amt    { width:9.6%; }
+@media (max-width:1200px){
+  .o_recv__table col.o-recv-col--name{ width:36%; }
+  .o_recv__table col.o-recv-col--amt { width:10.8%; }
 }
 
-/* Alignment */
-#recv_table th.serial,
-#recv_table td.text-center { text-align: center; }
-.o_recv__table .num,
-.o_recv__table th.text-end { text-align: right; }
+/* Alignment + tints (scoped to dashboard table) */
+#recv_table th.serial, #recv_table td.text-center { text-align:center; }
+.o_recv__table .num, .o_recv__table th.text-end { text-align:right; }
+.o_recv__table .col-current{ background:#f0fdf4; }
+.o_recv__table .col-d0_30  { background:#fffbea; }
+.o_recv__table .col-d31_60 { background:#fff7ed; }
+.o_recv__table .col-d61_90 { background:#fef2f2; }
+.o_recv__table .col-d90p   { background:#fee2e2; }
+.o_recv__table .num.negative,
+.o_recv__table .num:has(span.negative){ color:#b91c1c; }
+.o_recv__table tbody tr:hover{ background:#f9fafb; }
 
-/* Bucket tints (main table only) */
-.o_recv__table .col-current { background-color: #f0fdf4; }
-.o_recv__table .col-d0_30   { background-color: #fffbea; }
-.o_recv__table .col-d31_60  { background-color: #fff7ed; }
-.o_recv__table .col-d61_90  { background-color: #fef2f2; }
-.o_recv__table .col-d90p    { background-color: #fee2e2; }
+/* ===== ROW EXPANDER (dashboard) ===== */
+#recv_table .o-recv-row{ cursor:pointer; }
+#recv_table .o-recv-row:hover{ background:#f9fafb; }
+.o-recv-expand{ display:none; background:#fbfbfb; }
+.o-recv-expand.open{ display:table-row!important; }
+.o-recv-expand td{ padding:0!important; }
+.o-recv-expand__body{ padding:10px 12px; }
+.o-recv-expand__loading, .o-recv-expand__empty, .o-recv-expand__error{ padding:10px; color:#6b7280; }
 
-/* Negative values */
-.o_recv__table .num.negative { color: #b91c1c; }
-.o_recv__table .num:has(span.negative) { color: #b91c1c; }
+/* expander tables */
+.o-recv-expand__table{ width:100%; border-collapse:collapse; background:#fff; border:1px solid #e5e7eb; table-layout:fixed; }
+.o-recv-expand__table th, .o-recv-expand__table td{ padding:6px 8px; border-bottom:1px solid #f3f4f6; }
+.o-recv-expand__table th{ background:#f9fafb; text-align:left; }
+.o-recv-expand__table .num{ text-align:right; }
 
-/* Row hover */
-.o_recv__table tbody tr:hover { background: #f9fafb; }
+.o-recv-empty-h{ color:transparent; user-select:none; }
+.o-recv-expand__table .o-recv-total th, .o-recv-expand__table .o-recv-total td{ font-weight:600; border-top:2px solid #e5e7eb; }
 
-/* =======================
-   ROW EXPANDER
-========================= */
-#recv_table .o-recv-row { cursor: pointer; }
-#recv_table .o-recv-row:hover { background: #f9fafb; }
+/* ===== Dashboard toolbar ===== */
+.o-recv-tools{ display:flex; justify-content:space-between; align-items:center; margin:8px 0 10px; gap:12px; flex-wrap:wrap; }
+.o-recv-tools__left, .o-recv-tools__right{ display:inline-flex; align-items:center; gap:8px; }
+.o-recv-input{ min-width:260px; padding:6px 10px; border:1px solid #e5e7eb; border-radius:8px; }
+.o-recv-select{ padding:6px 8px; border:1px solid #e5e7eb; border-radius:8px; background:#fff; }
 
-.o-recv-expand { display: none; background: #fbfbfb; }
-.o-recv-expand.open { display: table-row !important; }
+/* ===== Expander — alignment grid ===== */
+.o-recv-align{ width:100%; border-collapse:collapse; table-layout:fixed; background:#fff; }
+.o-recv-align col.o-recv-col--name{ width:42%; }
+.o-recv-align col.o-recv-col--amt { width:9.6%; }
+@media (max-width:1200px){
+  .o-recv-align col.o-recv-col--name{ width:36%; }
+  .o-recv-align col.o-recv-col--amt { width:10.8%; }
+}
+.o-recv-align th, .o-recv-align td{ padding:6px 8px; border-bottom:1px solid #f3f4f6; vertical-align:middle; background:transparent; }
+.o-recv-align .num{ text-align:right; }
 
-.o-recv-expand td { padding: 0 !important; }
-.o-recv-expand__body { padding: 10px 12px; }
-
-.o-recv-expand__loading,
-.o-recv-expand__empty,
-.o-recv-expand__error {
-  padding: 10px; color: #6b7280;
+.o-recv-invwrap{ padding:2px 0; }
+.o-recv-grid3{ display:grid; grid-template-columns:110px 120px 1fr; gap:8px; align-items:center; }
+.o-recv-grid3 .inv{ font-size:12px; font-weight:500; word-break:break-all; max-width:140px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.o-recv-grid3 .date{ font-size:13px; color:#374151; }
+.o-recv-grid3 .desc{ font-size:13px; color:#111827; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.o-recv-grid3 .inv:hover{
+  overflow:visible; white-space:normal; background:#f9fafb; position:relative; z-index:2; padding:2px 4px; border-radius:4px;
+}
+.o-recv-align .o-recv-total td{ font-weight:600; border-top:2px solid #e5e7eb; }
+.o-recv-subhead{ display:grid; grid-template-columns:110px 120px 1fr; gap:12px; padding:6px 4px; font-weight:600; color:#374151; }
+.o-recv-align thead th{ background:#f9fafb; border-bottom:1px solid #e5e7eb; padding:6px 8px; }
+/* ===== Force invoice # to stay inside its cell (bucket page) ===== */
+.o_recv_bucket .o-bucket__table {
+  table-layout: fixed; /* ensures colgroup widths are enforced */
 }
 
-.o-recv-expand__section { margin-bottom: 12px; }
-.o-recv-expand__sectionHeader {
-  display: flex; align-items: center; justify-content: space-between;
-  margin: 2px 0 6px 0; font-weight: 600;
-}
-
-/* Badges (kept if you use them elsewhere) */
-.badge { display: inline-block; padding: 2px 8px; border-radius: 9999px; font-size: 12px; }
-.badge-current { background: #ecfdf5; color: #065f46; }
-.badge-d0_30   { background: #fffbeb; color: #854d0e; }
-.badge-d31_60  { background: #fff7ed; color: #9a3412; }
-.badge-d61_90  { background: #fef2f2; color: #991b1b; }
-.badge-d90p    { background: #fee2e2; color: #7f1d1d; }
-
-.o-recv-expand__sectionTotal { font-weight: 600; color: #111827; }
-
-.o-recv-expand__table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  table-layout: fixed;
-}
-.o-recv-expand__table th,
-.o-recv-expand__table td {
-  padding: 6px 8px;
-  border-bottom: 1px solid #f3f4f6;
-}
-.o-recv-expand__table th { background: #f9fafb; text-align: left; }
-.o-recv-expand__table .num { text-align: right; }
-
-/* Column hints inside expander (invoice table) */
-.o-recv-expand__table .col-inv  { width: 110px; }
-.o-recv-expand__table .col-date { width: 120px; }
-.o-recv-expand__table .col-amt  { width: 130px; }
-.o-recv-expand__table .col-desc { width: auto; }
-
-/* ===== Plain expander (no bucket colors) + hidden mini-headers ===== */
-.o-recv-expand__table--plain td,
-.o-recv-expand__table--plain th {
-  background: transparent !important;
-}
-.o-recv-empty-h {       /* invisible header text, keeps columns aligned */
-  color: transparent; user-select: none;
-}
-
-/* Totals row in expander */
-.o-recv-expand__table .o-recv-total th,
-.o-recv-expand__table .o-recv-total td {
-  font-weight: 600;
-  border-top: 2px solid #e5e7eb;
-}
-
-/* =======================
-   TOOLBAR
-========================= */
-.o-recv-tools {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin: 8px 0 10px;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.o-recv-tools__left,
-.o-recv-tools__right {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-.o-recv-input {
-  min-width: 260px;
-  padding: 6px 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-}
-.o-recv-select {
-  padding: 6px 8px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fff;
-}
-/* =======================
-   EXPANDER — hard-align with main header (7 columns)
-   Name | Current | 1–30 | 31–60 | 61–90 | 90+ | Total
-========================= */
-
-/* The outer alignment table mirrors the main table */
-.o-recv-align {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;          /* honor colgroup widths */
-  background: #fff;
-}
-
-.o-recv-align col.o-recv-col--name { width: 42%; }   /* must match .o_recv__table */
-.o-recv-align col.o-recv-col--amt  { width: 9.6%; }
-
-@media (max-width: 1200px) {
-  .o-recv-align col.o-recv-col--name { width: 36%; }
-  .o-recv-align col.o-recv-col--amt  { width: 10.8%; }
-}
-
-.o-recv-align th,
-.o-recv-align td {
-  padding: 6px 8px;
-  border-bottom: 1px solid #f3f4f6;
+.o_recv_bucket td.o-bucket__inv {
+  /* match the width you set in the <colgroup> (or slightly less) */
+  max-width: 110px;
+  display: inline-block;     /* so width/ellipsis work inside table cell */
+  white-space: nowrap;       /* keep on one line */
+  overflow: hidden;          /* hide overflow */
+  text-overflow: ellipsis;   /* show … when too long */
   vertical-align: middle;
-  background: transparent;      /* keep it plain, no bucket tint in expander */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;           /* smaller just for invoice # */
 }
 
-.o-recv-align .num { text-align: right; }
+/* Optional: if some IDs are a single ultra-long token, allow soft-break instead of ellipsis
+   (uncomment the next 2 lines if you prefer wrapping to “…”)
+   .o_recv_bucket td.o-bucket__inv { white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
+*/
 
-/* The LEFT “name” cell contains a 3-column grid (Inv # | Date | Description) */
-.o-recv-invwrap {
-  padding: 2px 0;               /* small breathing room between rows */
-}
-
+/* ===== Force invoice # to stay inside its grid cell (dashboard expander) ===== */
 .o-recv-grid3 {
-  display: grid;
-  grid-template-columns: 110px 120px 1fr;  /* Invoice # | Date | Description */
-  gap: 8px;
-  align-items: center;
-}
-
-.o-recv-grid3 .inv   { color: #111827; }
-.o-recv-grid3 .date  { color: #374151; }
-.o-recv-grid3 .desc  { color: #111827; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-/* OPTIONAL: a light separator above the total line inside the expander */
-.o-recv-align .o-recv-total td {
-  font-weight: 600;
-  border-top: 2px solid #e5e7eb;
-}
-/* Sub-header inside the expander's left column */
-.o-recv-subhead {
-  display: grid;
   grid-template-columns: 110px 120px 1fr; /* Invoice # | Date | Description */
-  gap: 12px;
-  padding: 6px 4px;
-  font-weight: 600;
-  color: #374151; /* gray-700 */
 }
 
-.o-recv-align thead th {
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-  padding: 6px 8px;
-}
-/* =======================
-   EXPANDER INVOICE GRID — FONT FIX FOR LONG INVOICE NUMBERS
-======================= */
-
-/* Reduce font size ONLY for invoice numbers */
-.o-recv-align .o-recv-invwrap .inv {
-  font-size: 12px;          /* slightly smaller, original ~14px */
-  font-weight: 500;
-  word-break: break-all;    /* allow wrapping if super long */
-  max-width: 140px;         /* limit width for ultra-long IDs */
+.o-recv-grid3 .inv {
+  max-width: 110px;          /* aligns with the grid column */
+  display: inline-block;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;  /* show "..." if it’s too long */
-}
-
-/* Keep other columns (date, desc) normal size */
-.o-recv-align .o-recv-invwrap .date {
-  font-size: 13px;
-}
-
-.o-recv-align .o-recv-invwrap .desc {
-  font-size: 13px;
-  color: #111827;
-}
-.o-recv-align .o-recv-invwrap .inv:hover {
-  overflow: visible;
-  white-space: normal;
-  background: #f9fafb;
-  position: relative;
-  z-index: 2;
-  padding: 2px 4px;
-  border-radius: 4px;
+  text-overflow: ellipsis;
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }

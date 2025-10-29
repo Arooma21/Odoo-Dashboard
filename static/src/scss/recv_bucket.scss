@@ -1,0 +1,46 @@
+/* =======================
+   BUCKET PAGE (scoped)
+======================= */
+.o_recv_bucket {
+  /* toolbar */
+  .o-bucket-tools{
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; margin:8px 0 10px; flex-wrap:wrap;
+  }
+  .o-bucket-tools__left{ display:inline-flex; gap:8px; align-items:center; }
+  .o-bucket-tools__right{ display:inline-flex; gap:10px; align-items:center; }
+  #bucketSearch{ min-width:320px; padding:6px 10px; border:1px solid #e5e7eb; border-radius:8px; }
+  .o-bucket-total{ font-weight:600; }
+
+  /* table */
+  .o-bucket__table{
+    width:100%; table-layout:fixed; border-collapse:separate; border-spacing:0;
+  }
+  .o-bucket__table thead th{
+    position:sticky; top:0; z-index:2; background:var(--o-view-background,#fff); box-shadow:0 1px 0 rgba(0,0,0,.06);
+  }
+  .o-bucket__table tbody tr:hover{ background:#f8fafc; }
+
+  /* columns */
+  .o-bucket__table col:nth-child(1){ width:120px; } /* customer code */
+  .o-bucket__table col:nth-child(3){ width:110px; } /* invoice # */
+  .o-bucket__table col:nth-child(4){ width:120px; } /* date */
+  .o-bucket__table col:nth-child(6){ width:140px; } /* amount */
+
+  /* invoice cell: truncate like dashboard */
+  .o-bucket__inv{
+    max-width:170px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    font-size:12px;
+  }
+
+  /* bucket tints (scoped) */
+  .col-current{ background:#f0fdf4; }
+  .col-d0_30  { background:#fffbea; }
+  .col-d31_60 { background:#fff7ed; }
+  .col-d61_90 { background:#fef2f2; }
+  .col-d90p   { background:#fee2e2; }
+
+  /* right align numbers */
+  .text-end, .num{ text-align:right; }
+}
